@@ -50,6 +50,7 @@ function updateOrderStatus(orderId, status) {
 
 // Global WA Socket
 let sock;
+let pairingCodeRequested = false;
 
 /* ==================== HELPER FULL INTERACTIVE BUTTON / LIST ==================== */
 
@@ -143,32 +144,64 @@ async function sendInteractiveList(jid, { title, text, footer, buttonText, secti
 
 /* ==================== BOT HANDLERS ==================== */
 
+const authDir = path.join(__dirname, 'auth_info_baileys');
+if (!fs.existsSync(authDir)) {
+  fs.mkdirSync(authDir, { recursive: true });
+}
+
 async function connectToWhatsApp() {
-  const { state, saveCreds } = await useMultiFileAuthState(path.join(__dirname, 'auth_info_baileys'));
-  const { version } = await fetchLatestBaileysVersion();
+  if (!fs.existsSync(authDir)) {
+    fs.mkdirSync(authDir, { recursive: true });
+  }
+  const { state, saveCreds } = await useMultiFileAuthState(authDir);
+  const { version, isLatest } = await fetchLatestBaileysVersion();
+  console.log(`Menggunakan Baileys versi v${version.join('.')}, isLatest: ${isLatest}`);
+
+  const usePairingCode = process.env.USE_PAIRING_CODE === 'true';
+  const botNumber = (process.env.BOT_PHONE_NUMBER || '').replace(/[^0-9]/g, '');
 
   sock = makeWASocket({
     version,
-    logger: pino({ level: 'silent' }),
-    printQRInTerminal: true,
+    logger: pino({ level: 'fatal' }),
+    printQRInTerminal: !usePairingCode,
     auth: state,
+    browser: ['Ubuntu', 'Chrome', '20.0.04'],
+    syncFullHistory: false,
+    connectTimeoutMs: 60000,
+    defaultQueryTimeoutMs: 0,
+    keepAliveIntervalMs: 10000,
     generateHighQualityLinkPreview: true
   });
 
   sock.ev.on('creds.update', saveCreds);
 
-  sock.ev.on('connection.update', (update) => {
+  if (usePairingCode && !sock.authState.creds.registered) {
+    setTimeout(async () => {
+      try {
+        console.log(`\n⏳ Mengirim permintaan Pairing Code ke nomor: ${botNumber}...`);
+        const code = await sock.requestPairingCode(botNumber);
+        console.log('\n==================================================');
+        console.log(`🔑 KODE PAIRING WHATSAPP ANDA:  ${code}`);
+        console.log('==================================================');
+        console.log('👉 Buka WhatsApp di HP ➔ Perangkat Tertaut ➔ Tautkan dengan nomor telepon ➔ Masukkan kode 8 digit di atas!\n');
+      } catch (err) {
+        console.error('Gagal meminta Pairing Code:', err?.message || err);
+      }
+    }, 4000);
+  }
+
+  sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
-    if (qr) {
-      console.log('\n⚡ SILAKAN SCAN QR CODE INI DI WHATSAPP (Perangkat Tertaut):\n');
+
+    if (qr && !usePairingCode) {
+      console.log('\n⚡ SILAKAN SCAN QR CODE INI DI WHATSAPP:\n');
       qrcode.generate(qr, { small: true });
     }
+
     if (connection === 'close') {
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-      console.log('Koneksi terputus, mencoba menyambung ulang...', shouldReconnect);
-      if (shouldReconnect) {
-        connectToWhatsApp();
-      }
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      console.log(`Koneksi terputus (Status Code: ${statusCode}). Menyambung ulang...`);
+      setTimeout(connectToWhatsApp, 3000);
     } else if (connection === 'open') {
       console.log('✅ BOT WHATSAPP STORE BERHASIL TERHUBUNG DENGAN CASAKU.ID!');
     }
