@@ -55,91 +55,120 @@ let pairingCodeRequested = false;
 /* ==================== HELPER FULL INTERACTIVE BUTTON / LIST ==================== */
 
 async function sendInteractiveButtons(jid, { title, text, footer, buttons }) {
-  const dynamicButtons = buttons.map((btn, idx) => {
-    if (btn.type === 'url') {
-      return {
-        name: 'cta_url',
-        buttonParamsJson: JSON.stringify({
-          display_text: btn.text,
-          url: btn.url,
-          merchant_url: btn.url
-        })
-      };
-    } else if (btn.type === 'copy') {
-      return {
-        name: 'cta_copy',
-        buttonParamsJson: JSON.stringify({
-          display_text: btn.text,
-          copy_code: btn.code
-        })
-      };
-    } else {
-      return {
-        name: 'quick_reply',
-        buttonParamsJson: JSON.stringify({
-          display_text: btn.text,
-          id: btn.id || `btn_${idx}`
-        })
-      };
-    }
-  });
-
-  const msgContent = generateWAMessageFromContent(
-    jid,
-    {
-      viewOnceMessage: {
-        message: {
-          interactiveMessage: proto.Message.InteractiveMessage.create({
-            body: proto.Message.InteractiveMessage.Body.create({ text }),
-            footer: proto.Message.InteractiveMessage.Footer.create({
-              text: footer || '⚡ Powered by Casaku.id & WhatsApp Store'
-            }),
-            header: proto.Message.InteractiveMessage.Header.create({
-              title: title || '🛍️ LOLLIPOP STORE BOT',
-              hasMediaAttachment: false
-            }),
-            nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
-              buttons: dynamicButtons
-            })
+  try {
+    const dynamicButtons = buttons.map((btn, idx) => {
+      if (btn.type === 'url') {
+        return {
+          name: 'cta_url',
+          buttonParamsJson: JSON.stringify({
+            display_text: btn.text,
+            url: btn.url,
+            merchant_url: btn.url
           })
-        }
+        };
+      } else if (btn.type === 'copy') {
+        return {
+          name: 'cta_copy',
+          buttonParamsJson: JSON.stringify({
+            display_text: btn.text,
+            copy_code: btn.code
+          })
+        };
+      } else {
+        return {
+          name: 'quick_reply',
+          buttonParamsJson: JSON.stringify({
+            display_text: btn.text,
+            id: btn.id || `btn_${idx}`
+          })
+        };
       }
-    },
-    {}
-  );
+    });
 
-  await sock.relayMessage(jid, msgContent.message, { messageId: msgContent.key.id });
+    const msgContent = generateWAMessageFromContent(
+      jid,
+      {
+        viewOnceMessage: {
+          message: {
+            interactiveMessage: proto.Message.InteractiveMessage.create({
+              body: proto.Message.InteractiveMessage.Body.create({ text }),
+              footer: proto.Message.InteractiveMessage.Footer.create({
+                text: footer || '⚡ Powered by Casaku.id & WhatsApp Store'
+              }),
+              header: proto.Message.InteractiveMessage.Header.create({
+                title: title || '🛍️ LOLLIPOP STORE BOT',
+                hasMediaAttachment: false
+              }),
+              nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                buttons: dynamicButtons
+              })
+            })
+          }
+        }
+      },
+      {}
+    );
+
+    await sock.relayMessage(jid, msgContent.message, { messageId: msgContent.key.id });
+  } catch (err) {
+    console.error('Gagal kirim native interactive buttons, fallback ke text menu:', err.message);
+    // Fallback pesan teks rapi dengan nomor pilihan
+    let fallbackText = `*${title || '🛍️ LOLLIPOP STORE BOT'}*\n\n${text}\n\n`;
+    buttons.forEach((b, i) => {
+      if (b.type === 'url') {
+        fallbackText += `🔗 *${b.text}:*\n${b.url}\n\n`;
+      } else {
+        fallbackText += `👉 Ketik *${b.id || b.text}* : ${b.text}\n`;
+      }
+    });
+    fallbackText += `\n_${footer || '⚡ Powered by Casaku.id'}_`;
+    await sock.sendMessage(jid, { text: fallbackText });
+  }
 }
 
 async function sendInteractiveList(jid, { title, text, footer, buttonText, sections }) {
-  const msgContent = generateWAMessageFromContent(
-    jid,
-    {
-      viewOnceMessage: {
-        message: {
-          interactiveMessage: proto.Message.InteractiveMessage.create({
-            body: proto.Message.InteractiveMessage.Body.create({ text }),
-            footer: proto.Message.InteractiveMessage.Footer.create({ text: footer || 'Pilih menu di bawah ini' }),
-            header: proto.Message.InteractiveMessage.Header.create({ title: title || '🎮 KATALOG GAME & APLIKASI', hasMediaAttachment: false }),
-            nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
-              buttons: [
-                {
-                  name: 'single_select',
-                  buttonParamsJson: JSON.stringify({
-                    title: buttonText || '📋 Buka Daftar Produk',
-                    sections: sections
-                  })
-                }
-              ]
+  try {
+    const msgContent = generateWAMessageFromContent(
+      jid,
+      {
+        viewOnceMessage: {
+          message: {
+            interactiveMessage: proto.Message.InteractiveMessage.create({
+              body: proto.Message.InteractiveMessage.Body.create({ text }),
+              footer: proto.Message.InteractiveMessage.Footer.create({ text: footer || 'Pilih menu di bawah ini' }),
+              header: proto.Message.InteractiveMessage.Header.create({ title: title || '🎮 KATALOG GAME & APLIKASI', hasMediaAttachment: false }),
+              nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.create({
+                buttons: [
+                  {
+                    name: 'single_select',
+                    buttonParamsJson: JSON.stringify({
+                      title: buttonText || '📋 Buka Daftar Produk',
+                      sections: sections
+                    })
+                  }
+                ]
+              })
             })
-          })
+          }
         }
-      }
-    },
-    {}
-  );
+      },
+      {}
+    );
 
-  await sock.relayMessage(jid, msgContent.message, { messageId: msgContent.key.id });
+    await sock.relayMessage(jid, msgContent.message, { messageId: msgContent.key.id });
+  } catch (err) {
+    console.error('Gagal kirim native list, fallback ke text list:', err.message);
+    let fallbackList = `*${title || '🎮 KATALOG GAME'}*\n\n${text}\n\n`;
+    sections.forEach(sec => {
+      fallbackList += `*${sec.title}*\n`;
+      sec.rows.forEach(r => {
+        fallbackList += `• Ketik *${r.id}* : ${r.title}\n  _${r.description}_\n`;
+      });
+      fallbackList += `\n`;
+    });
+    fallbackList += `_${footer || 'Pilih salah satu kode di atas'}_`;
+    await sock.sendMessage(jid, { text: fallbackList });
+  }
 }
 
 /* ==================== BOT HANDLERS ==================== */
@@ -200,8 +229,17 @@ async function connectToWhatsApp() {
 
     if (connection === 'close') {
       const statusCode = lastDisconnect?.error?.output?.statusCode;
-      console.log(`Koneksi terputus (Status Code: ${statusCode}). Menyambung ulang...`);
-      setTimeout(connectToWhatsApp, 3000);
+      const isLoggedOut = statusCode === DisconnectReason.loggedOut;
+      console.log(`Koneksi terputus (Status Code: ${statusCode}).`);
+      
+      if (statusCode === 401 || isLoggedOut) {
+        console.log('⚠️ Sesi kadaluarsa / unauthenticated. Membersihkan auth session...');
+        fs.rmSync(authDir, { recursive: true, force: true });
+        setTimeout(connectToWhatsApp, 3000);
+      } else {
+        console.log('Menyambung ulang dalam 3 detik...');
+        setTimeout(connectToWhatsApp, 3000);
+      }
     } else if (connection === 'open') {
       console.log('✅ BOT WHATSAPP STORE BERHASIL TERHUBUNG DENGAN CASAKU.ID!');
     }
@@ -215,21 +253,35 @@ async function connectToWhatsApp() {
     const from = msg.key.remoteJid;
     const pushName = msg.pushName || 'Sobat';
 
+    // PARSER TEKS PERINTAH / PESAN MASUK DARI SEMUA TIPE WHATSAPP
     let body = '';
-    if (msg.message.conversation) {
+    const mType = Object.keys(msg.message)[0];
+
+    if (mType === 'conversation') {
       body = msg.message.conversation;
-    } else if (msg.message.extendedTextMessage?.text) {
-      body = msg.message.extendedTextMessage.text;
-    } else if (msg.message.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson) {
-      const parsed = JSON.parse(msg.message.interactiveResponseMessage.nativeFlowResponseMessage.paramsJson);
-      body = parsed.id || '';
-    } else if (msg.message.buttonsResponseMessage?.selectedButtonId) {
-      body = msg.message.buttonsResponseMessage.selectedButtonId;
-    } else if (msg.message.listResponseMessage?.singleSelectReply?.selectedRowId) {
-      body = msg.message.listResponseMessage.singleSelectReply.selectedRowId;
+    } else if (mType === 'extendedTextMessage') {
+      body = msg.message.extendedTextMessage?.text || '';
+    } else if (mType === 'interactiveResponseMessage') {
+      try {
+        const parsed = JSON.parse(msg.message.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson || '{}');
+        body = parsed.id || '';
+      } catch (e) {
+        body = '';
+      }
+    } else if (mType === 'buttonsResponseMessage') {
+      body = msg.message.buttonsResponseMessage?.selectedButtonId || '';
+    } else if (mType === 'listResponseMessage') {
+      body = msg.message.listResponseMessage?.singleSelectReply?.selectedRowId || '';
+    } else if (mType === 'templateButtonReplyMessage') {
+      body = msg.message.templateButtonReplyMessage?.selectedId || '';
     }
 
-    body = body.trim();
+    if (!body && msg.message.extendedTextMessage?.text) {
+      body = msg.message.extendedTextMessage.text;
+    }
+
+    body = (body || '').trim();
+    console.log(`📩 Pesan Masuk dari [${from} - ${pushName}]: "${body}" (Type: ${mType})`);
 
     // CEK SESI USER JIKA SEDANG INPUT ID AKUN GAME
     const currentSession = userSession.get(from);
@@ -299,8 +351,11 @@ async function connectToWhatsApp() {
       return;
     }
 
-    // MAIN COMMAND ROUTER
-    if (body.toLowerCase() === 'menu' || body.toLowerCase() === '.menu' || body === 'menu_utama' || body.toLowerCase() === 'halo') {
+    // MAIN COMMAND ROUTER (FLEKSIBEL MENU / KEYWORD)
+    const lowerBody = body.toLowerCase();
+    const isMenuCmd = lowerBody === 'menu' || lowerBody === '.menu' || lowerBody === '!menu' || body === 'menu_utama' || lowerBody === 'halo' || lowerBody === 'p' || lowerBody === 'hi' || lowerBody === 'start' || lowerBody === 'hai' || lowerBody === 'bot';
+
+    if (isMenuCmd) {
       const welcomeText = `Halo kak *${pushName}* 👋 Selamat datang di *${process.env.BOT_NAME || 'Lollipop Store'}*.\n\n` +
         `Kami melayani top up game resmi & produk digital dengan *Payment Gateway Otomatis Casaku.id*.\n\n` +
         `Silakan pilih menu transaksi di bawah ini:`;
