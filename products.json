@@ -1,0 +1,62 @@
+[
+  {
+    "id": "mlbb",
+    "name": "Mobile Legends: Bang Bang",
+    "desc": "Top Up Diamonds MLBB Resmi Moonton (Butuh User ID & Zone ID)",
+    "hasZone": true,
+    "items": [
+      { "id": "ml_86", "name": "86 Diamonds", "price": 19500 },
+      { "id": "ml_172", "name": "172 Diamonds", "price": 38000 },
+      { "id": "ml_257", "name": "257 Diamonds", "price": 57000 },
+      { "id": "ml_706", "name": "706 Diamonds", "price": 155000 },
+      { "id": "ml_wdp", "name": "Weekly Diamond Pass", "price": 27500 }
+    ]
+  },
+  {
+    "id": "ff",
+    "name": "Free Fire",
+    "desc": "Top Up Diamonds FF Resmi Garena (Cukup User ID)",
+    "hasZone": false,
+    "items": [
+      { "id": "ff_70", "name": "70 Diamonds", "price": 9200 },
+      { "id": "ff_140", "name": "140 Diamonds", "price": 18300 },
+      { "id": "ff_355", "name": "355 Diamonds", "price": 45500 },
+      { "id": "ff_720", "name": "720 Diamonds", "price": 91000 },
+      { "id": "ff_member", "name": "Membership Mingguan", "price": 28000 }
+    ]
+  },
+  {
+    "id": "pubg",
+    "name": "PUBG Mobile",
+    "desc": "Top Up UC PUBG Mobile Kilat (Cukup User ID)",
+    "hasZone": false,
+    "items": [
+      { "id": "pubg_60", "name": "60 UC", "price": 14500 },
+      { "id": "pubg_325", "name": "325 UC", "price": 72000 },
+      { "id": "pubg_660", "name": "660 UC", "price": 143000 }
+    ]
+  },
+  {
+    "id": "genshin",
+    "name": "Genshin Impact",
+    "desc": "Genesis Crystals & Blessing of Welkin Moon",
+    "hasZone": false,
+    "items": [
+      { "id": "gi_welkin", "name": "Blessing of Welkin Moon", "price": 65000 },
+      { "id": "gi_300", "name": "300+30 Genesis Crystals", "price": 68000 },
+      { "id": "gi_980", "name": "980+110 Crystals", "price": 215000 }
+    ]
+  },
+  {
+    "id": "app_premium",
+    "name": "Aplikasi Premium & Streaming",
+    "desc": "Akun Premium Netflix, Spotify, YouTube, Canva",
+    "hasZone": false,
+    "items": [
+      { "id": "app_netflix", "name": "Netflix 1 Bulan Private 4K", "price": 35000 },
+      { "id": "app_yt", "name": "YouTube Premium 1 Bulan", "price": 10000 },
+      { "id": "app_spotify", "name": "Spotify Premium Individual 1 Bulan", "price": 15000 },
+      { "id": "app_canva", "name": "Canva Pro 1 Tahun Edu", "price": 12000 }
+    ]
+  }
+]
